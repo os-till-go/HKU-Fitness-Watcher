@@ -6,12 +6,12 @@
 
 港大健身房蹲位与填表助手 · 直接运行在原预约页上
 
-![Version](https://img.shields.io/badge/version-0.2.2-17a776?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.3.1-17a776?style=flat-square)
 ![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-f7df1e?style=flat-square&logo=javascript&logoColor=222)
 ![Tampermonkey](https://img.shields.io/badge/Tampermonkey-userscript-00485b?style=flat-square&logo=tampermonkey)
 ![Dependencies](https://img.shields.io/badge/runtime_dependencies-0-64748b?style=flat-square)
 
-[安装脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js) · [打开预约页](https://fcbooking.cse.hku.hk/Form/Signup) · [功能预览](#功能预览) · [快速开始](#快速开始)
+[安装脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js) · [打开预约页](https://fcbooking.cse.hku.hk/Form/SignUp) · [功能预览](#功能预览) · [快速开始](#快速开始)
 
 </div>
 
@@ -22,6 +22,8 @@
 **HKU Fitness Watcher** 将查场次、选时段、蹲退位和资料预填放到一个面板里。支持 **HKU B-Active** 和 **CSE Active**，默认选择 B-Active。
 
 > 选场次和填写资料各有独立按钮；声明、验证码与最终提交仍由你完成。看到空位或选中场次，都不代表已经占位。
+
+**Safari 试用版：** v0.3.1 已增加 Tampermonkey / Userscripts 存储接口兼容、触控尺寸、收起助手及通知降级提示。用户已反馈 iPhone Safari + Userscripts 的 v0.3.0 基本功能可用，设备与系统版本待补；Mac Safari 仍未验证。v0.3.1 另修复了 `Signup` / `SignUp` 地址兼容。安装及回报步骤见 [Safari 试用指南](docs/safari.md)，进度见 [Issue #4](https://github.com/os-till-go/HKU-Fitness-Watcher/issues/4)。
 
 ## 功能预览
 
@@ -83,6 +85,8 @@
 
 ### 1 · 安装
 
+**Mac / iPhone Safari** 请使用 [Safari 试用指南](docs/safari.md)。下面的开发者模式步骤仅针对 Chromium 浏览器，不适用于 Safari。
+
 在 Chrome / Edge 安装 [Tampermonkey](https://www.tampermonkey.net/)，然后打开：
 
 **先开启用户脚本执行权限。** 按 [Tampermonkey 官方 FAQ Q209](https://www.tampermonkey.net/faq.php?q=Q209#Q209)，Tampermonkey 5.3+ 在 Chromium 浏览器中需要启用「允许用户脚本」或「开发者模式」：
@@ -96,7 +100,9 @@
 
 如果没有弹出安装页面：进入 Tampermonkey 管理面板 → 新建脚本 → 删除默认内容 → 粘贴 [脚本源码](fitness-watcher.user.js) → `Ctrl + S` 保存。
 
-打开或刷新 [HKU 健身房预约页](https://fcbooking.cse.hku.hk/Form/Signup)，右上角即可看到助手面板。如果没有出现，检查扩展是否允许在该网站运行，并按 Tampermonkey 提示开启用户脚本权限。
+打开或刷新 [HKU 健身房预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，右上角即可看到助手面板。如果没有出现，检查扩展是否允许在该网站运行，并按 Tampermonkey 提示开启用户脚本权限。
+
+首页 Booking 进入的标准入口是 `/Form/SignUp`。脚本同时兼容 `/Form/Signup` 与 `/Form/SignUp`（包括查询参数及首页场次直达链接）。升级后请保存脚本并刷新页面。
 
 > **面板不显示？** 先确认上述执行权限已开启，再检查脚本已启用、扩展有此网站访问权限，最后刷新预约页。详细步骤见官方 Q209。
 
@@ -151,7 +157,9 @@ flowchart TD
 - 场次查询使用原网页的只读接口；查询请求不附带姓名、邮箱或学号。
 - 个人资料默认只留在当前页面内存。勾选保存并点击「填写资料」后，才会存入 Tampermonkey 脚本专属存储（明文）。
 - 取消保存勾选或点击「清除已存资料」，可删除已存副本。填入原表单后，网站脚本可以读取这些内容。
+- 同时兼容同步 `GM_getValue` 和异步 `GM.getValue` 等脚本存储接口；保存 / 删除失败会明确提示。没有脚本管理器存储能力时，只保留本页内存并禁用保存勾选，不将真实站点的资料降级写入网站 localStorage。
 - 默认每 **30 秒**查询，最少 **10 秒**。请只开一个监测标签页，并保持电脑不休眠；后台标签页可能延迟。
+- iPhone 请保持 Safari 页面前台。切后台或锁屏可能暂停页面，返回后重新查场次；当前版本没有服务端推送，不承诺锁屏持续蹲位。系统通知不可用时，会显示提示并继续使用页内提醒。
 - 网络错误会降低查询频率，连续五次错误停止；HTTP 401 / 403 / 429 会立即停止。
 - Walk In 与网站标记为不可预约的场次不会触发有位提醒。
 
@@ -176,7 +184,7 @@ fitness-watcher.user.js   油猴脚本
  docs/screenshots/        实际使用截图与图注
 ```
 
-当前包含 **19 项本地测试**，覆盖原网页日期标签保持、原网页不可订校验、选择中途取消、日期切换、旧请求取消、满位后放位、独立填写资料、通知常驻选项、限流与存储。流程测试使用轻量 DOM 适配器；真实预约提交与真实退位事件尚未端到端验证。
+当前包含 **29 项本地测试**，覆盖同步 / 异步存储、异步保存与删除顺序、存储失败、通知降级、可视高度变化、原网页日期标签保持、选择中途取消、日期切换、满位后放位和独立填写资料。流程测试使用轻量 DOM 适配器；Mac / iPhone Safari、真实预约提交与真实退位事件尚未端到端验证。
 
 ---
 
