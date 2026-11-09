@@ -36,18 +36,48 @@
 
 ### 截图
 
+下面是 v0.2.1 的实际使用界面。图中的日期和余位为截图时的状态。
+
 <table>
 <tr>
-<td width="50%" align="center"><strong>① 日期与场次</strong><br><br>（待补截图：日期按钮、星期、时段与余位）<br><br></td>
-<td width="50%" align="center"><strong>② 一键填写资料</strong><br><br>（待补截图：顶部填写按钮与资料设置）<br><br></td>
+<td width="50%" align="center" valign="top">
+<strong>① 面板总览 · 日期直接点</strong><br><br>
+<a href="docs/screenshots/01-overview.png"><img src="docs/screenshots/01-overview.png" alt="面板总览：填写资料、场馆选择，以及带中英文星期的日期按钮" width="340"></a><br>
+<sub>默认 B-Active，切换日期即查询。</sub>
+</td>
+<td width="50%" align="center" valign="top">
+<strong>② 场次与余位 · 一眼看清</strong><br><br>
+<a href="docs/screenshots/02-sessions.png"><img src="docs/screenshots/02-sessions.png" alt="场次按钮：17点与20点30分仍有余位，18点45分满位可点击蹲位" width="340"></a><br>
+<sub>有位点选场次，满位点一下就开始蹲。</sub>
+</td>
 </tr>
 <tr>
-<td width="50%" align="center"><strong>③ 蹲位中</strong><br><br>（待补截图：满位时段、监测状态）<br><br></td>
-<td width="50%" align="center"><strong>④ 有空位！</strong><br><br>（待补截图：常驻页内提醒与桌面通知）<br><br></td>
+<td width="50%" align="center" valign="top">
+<strong>③ 资料填写 · 独立一个按钮</strong><br><br>
+<a href="docs/screenshots/03-profile.png"><img src="docs/screenshots/03-profile.png" alt="顶部独立填写资料按钮与邮箱、姓名、学号保存设置，个人资料已遮挡" width="340"></a><br>
+<sub>资料可选保存；随时点顶部按钮填入。</sub>
+</td>
+<td width="50%" align="center" valign="top">
+<strong>④ 锁定时段 · 等待退位</strong><br><br>
+<a href="docs/screenshots/04-watching.png"><img src="docs/screenshots/04-watching.png" alt="选中的17点场次满位，正在监测；其他时段虽有余位，也不改变目标" width="340"></a><br>
+<sub>只蹲选中的 17:00 场次，其他时段有位也不会跳选。</sub>
+</td>
+</tr>
+<tr>
+<td width="50%" align="center" valign="top">
+<strong>⑤ 查询间隔 · 中午放位</strong><br><br>
+<a href="docs/screenshots/05-settings.png"><img src="docs/screenshots/05-settings.png" alt="蹲位设置：查询间隔、等待香港时间12点开始，以及桌面通知开关" width="340"></a><br>
+<sub>按需设置查询间隔、12 点开始和桌面通知。</sub>
+</td>
+<td width="50%" align="center" valign="top">
+<strong>⑥ 有空位！· 回来完成验证</strong><br><br>
+<a href="docs/screenshots/06-notifications.png"><img src="docs/screenshots/06-notifications.png" alt="发现空位后选入场次，显示页内常驻提示和Microsoft Edge桌面通知" width="340"></a><br>
+<sub>场次已选入；回到页面核对、验证并提交。</sub>
+</td>
 </tr>
 </table>
 
-<!-- 补图时，将图片放到 docs/screenshots/，用 <img src="docs/screenshots/01-sessions.png" alt="日期与场次" width="100%"> 替换上面的占位文字。 -->
+点击任意截图可查看原图。
 
 ## 快速开始
 
@@ -81,7 +111,7 @@ flowchart TD
 ```
 
 - **有位**：点时间按钮即可选入场次。
-- **没位**：自动开始蹲当天任意场次；只想要一个时段，就点对应的满位按钮。
+- **没位**：自动开始蹲当天任意场次；只想要一个时段，就点对应的满位按钮。锁定时段后，“暂无空位”指该目标场次；其他时段仍可能有余位。
 - **换日期**：直接点日期按钮或修改日期输入框。旧查询和旧监测会被取消，自动查询新日期。
 - **停止**：点击「停止蹲位」。刷新页面后不会自动恢复监测。
 
@@ -133,7 +163,7 @@ node demo/server.cjs
 fitness-watcher.user.js   油猴脚本
  demo/server.cjs          本地模拟页与场次接口
  tests/                  匹配、取消请求、蹲位、通知与资料填写测试
- docs/screenshots/       功能截图（待补）
+ docs/screenshots/        实际使用截图与图注
 ```
 
 当前包含 **16 项本地测试**，覆盖日期切换、旧请求取消、满位后放位、独立填写资料、通知常驻选项、限流与存储。流程测试使用轻量 DOM 适配器；真实预约提交与真实退位事件尚未端到端验证。
