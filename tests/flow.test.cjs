@@ -3,12 +3,40 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
 // Lightweight browser adapter: exercise request cancellation and form writes without real bookings.
-function harness(fetcher, savedTarget) {
+function harness(fetcher, savedTarget, nativeSettings={}) {
   const elements=new Map(), timers=new Map(), storage=new Map(), notices=[];let serial=0;
+  const observers=new Set(), nativeQueue=[];let nativeData=[], lastRequest=0;
+  class MutationObserver {
+    constructor(callback){this.callback=callback;}
+    observe(){observers.add(this);}
+    disconnect(){observers.delete(this);}
+  }
+  const key=value=>value.replaceAll('/','-');
+  function nativeTimes() {
+    const times=elements.get('SessionTime');times.replaceChildren();
+    for(const s of nativeData.filter(s=>s.sessionDate===elements.get('DateList').value)) {
+      const option={value:String(s.sessionHourID),text:`${s.startTime} - ${s.endTime}`,disabled:(nativeSettings.remaining ?? s.spaceRemaining)<=0};
+      times.add(option);
+    }
+  }
+  function nativeRefresh() {
+    const dates=elements.get('DateList'), all=elements.get('AllSessions');dates.replaceChildren();all.replaceChildren();
+    for(const s of nativeData) {
+      if(!dates.children.some(o=>o.value===s.sessionDate)) {
+        const weekday=new Date(key(s.sessionDate)+'T00:00:00Z').toLocaleDateString('en-GB',{weekday:'long',timeZone:'UTC'});
+        dates.add({value:s.sessionDate,text:`${s.date || key(s.sessionDate)} ${weekday}`,disabled:false});
+      }
+      all.add({value:`${s.sessionDate}:${s.sessionHourID}`,text:'Native session'});
+    }
+    dates.value=dates.children[0]?.value || '';nativeTimes();
+    const notify=()=>{for(const observer of [...observers])observer.callback();};
+    if(nativeSettings.defer)nativeQueue.push(notify);else queueMicrotask(notify);
+  }
   if(savedTarget) storage.set('fitness:target',JSON.stringify(savedTarget));
   function element(id='') {
     return {id,value:'',checked:false,disabled:false,textContent:'',children:[],
-      classList:{add(){},remove(){}}, addEventListener(){},dispatchEvent(){},scrollIntoView(){},checkValidity(){return true;},
+      get options(){return this.children;},
+      classList:{add(){},remove(){}}, addEventListener(){},dispatchEvent(event){if(event.type==='change'){if(id==='CenterID')nativeRefresh();if(id==='DateList')nativeTimes();}},scrollIntoView(){},checkValidity(){return true;},
       replaceChildren(...children){this.children=children;},add(option){this.children.push(option);},append(...children){this.children.push(...children);},
       attachShadow(){return {set innerHTML(html){for(const match of html.matchAll(/id="([^"]+)"/g))elements.set(match[1],element(match[1]));},getElementById(id){return elements.get(id);}};}};
   }
@@ -20,12 +48,12 @@ function harness(fetcher, savedTarget) {
     close(){this.closed=true;}
   }
   const context={document,location:{hostname:'localhost'},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
-    window:{addEventListener(){},focus(){}},Notification,Intl,Date,Event:class {},Option:class {constructor(text,value){this.text=text;this.value=value;}},
-    AbortController,fetch:fetcher, setTimeout:(fn,delay)=>{const id=++serial;timers.set(id,{fn,delay});return id;},clearTimeout:id=>timers.delete(id)};
+    window:{addEventListener(){},focus(){}},Notification,Intl,Date,Event:class {constructor(type){this.type=type;}},Option:class {constructor(text,value){this.text=text;this.value=value;}},MutationObserver,
+    AbortController,fetch:async(...args)=>{const request=++lastRequest;const response=await fetcher(...args);return {...response,json:async()=>{const data=await response.json();if(request===lastRequest)nativeData=data;return data;}};}, setTimeout:(fn,delay)=>{const id=++serial;timers.set(id,{fn,delay});return id;},clearTimeout:id=>timers.delete(id)};
   vm.runInNewContext(fs.readFileSync(require.resolve('../fitness-watcher.user.js'),'utf8'),context);
   const defaults={center:elements.get('center').value,time:elements.get('time').value};
   elements.get('center').value='10001';elements.get('date').value='2026-11-09';elements.get('time').value='17:00';elements.get('interval').value='10';
-  return {elements,timers,storage,document,defaults,notices};
+  return {elements,timers,storage,document,defaults,notices,flushNative:()=>{for(const fn of nativeQueue.splice(0))fn();}};
 }
 const session=remaining=>({sessionDate:'2026/11/09',date:'09/11/2026',sessionHourID:10143,startTime:'1700',endTime:'1830',spaceRemaining:remaining,capacity:60,sessionStatus:'10'});
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
@@ -91,7 +119,7 @@ function profile(h) {
 test('slot selection and the top profile button operate independently',async()=>{
   const h=harness(async()=>({ok:true,json:async()=>[session(4)]})); profile(h);
   await h.elements.get('check').onclick();
-  h.elements.get('choices').children[0].onclick();
+  await h.elements.get('choices').children[0].onclick();
   assert.equal(h.elements.get('SessionTime').value,'10143');
   assert.equal(h.elements.get('MemberID').value,'');
   assert.match(h.elements.get('status').textContent,/场次已选入/);
@@ -153,7 +181,7 @@ test('changing date ignores late response from previous date and cancels old mon
   resolveOld({ok:true,json:async()=>[session(4)]});await settle();
   assert.equal(h.notices.length,0);
   assert.equal(h.elements.get('date-label').textContent,'11.10 TUE 星期二');
-  h.elements.get('choices').children[0].onclick();
+  await h.elements.get('choices').children[0].onclick();
   assert.equal(h.elements.get('DateList').value,'2026/11/10');
   assert.equal(h.timers.size,0);
 });
@@ -162,4 +190,29 @@ test('top fill button works before any session query and leaves slot selection u
   h.elements.get('fill').onclick();
   assert.equal(h.elements.get('Email').value,'demo@example.com');
   assert.equal(h.elements.get('SessionTime').value,'');
+});
+test('native date labels and native option structure survive selection',async()=>{
+  const h=harness(async()=>({ok:true,json:async()=>[session(3)]}));
+  await h.elements.get('check').onclick();
+  await h.elements.get('choices').children[0].onclick();
+  assert.equal(h.elements.get('DateList').options[0].text,'09/11/2026 Monday');
+  assert.equal(h.elements.get('AllSessions').options[0].text,'Native session');
+  h.elements.get('DateList').dispatchEvent({type:'change'});
+  assert.equal(h.elements.get('SessionTime').options[0].value,'10143');
+});
+test('native site availability wins over older watcher availability',async()=>{
+  const h=harness(async()=>({ok:true,json:async()=>[session(3)]}),undefined,{remaining:0});
+  await h.elements.get('check').onclick();
+  await h.elements.get('choices').children[0].onclick();
+  assert.match(h.elements.get('status').textContent,/原网页显示该场次已不可订/);
+  assert.notEqual(h.elements.get('SessionTime').value,'10143');
+});
+test('stop cancels in-progress native selection and ignores delayed option notifications',async()=>{
+  const h=harness(async()=>({ok:true,json:async()=>[session(3)]}),undefined,{defer:true});
+  await h.elements.get('check').onclick();
+  const preparing=h.elements.get('choices').children[0].onclick();
+  h.elements.get('stop').onclick();h.flushNative();await preparing;
+  assert.equal(h.elements.get('status').textContent,'已停止监测');
+  assert.equal(h.elements.get('SessionTime').value,'');
+  assert.equal(h.timers.size,0);
 });

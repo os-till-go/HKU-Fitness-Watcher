@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         HKU Fitness Watcher 健身房蹲位
 // @namespace    hku-toys
-// @version      0.2.1
+// @version      0.2.2
 // @description  场次余位监测、声音提醒及一键预填；人工验证和提交
 // @match        https://fcbooking.cse.hku.hk/Form/Signup*
 // @grant        GM_getValue
@@ -50,7 +50,7 @@
     button{cursor:pointer;margin-top:9px}button:hover{background:#354f62}button:disabled{opacity:.5;cursor:default}.primary{background:#12664f;border-color:#318c70}.row{display:flex;gap:8px}.row>*{min-width:0;flex:1}
     p{margin:8px 0;font-size:12px;color:#b8c9d9}output{display:block;padding:10px;background:#0b1721;border-radius:8px;margin-top:12px;white-space:pre-wrap;font-size:13px}.hit{color:#6ee7bc}#slots{white-space:pre-line;font-size:12px;margin-top:8px}input[type=checkbox]{width:auto}a{color:#6ee7bc}
     #choices,#dates{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}#choices button,#dates button{margin:0;text-align:left;white-space:pre-line}#choices .chosen,#dates .chosen{outline:2px solid #6ee7bc}#alert{border:2px solid #6ee7bc;border-radius:9px;padding:12px;margin:10px 0;background:#103e33}#alert[hidden]{display:none}#alert-text{font-weight:bold;color:#fff}
-    </style><details open><summary>HKU Fitness Watcher <span>v0.2.1 · 本机辅助</span></summary><main>
+    </style><details open><summary>HKU Fitness Watcher <span>v0.2.2 · 本机辅助</span></summary><main>
     <button id="fill" class="primary">填写资料</button>
     <details id="profile" style="width:100%;margin-top:10px;box-shadow:none"><summary>编辑 / 保存资料</summary><main>
     <label>邮箱<input id="email" type="email" autocomplete="email"></label>
@@ -94,7 +94,7 @@
       button.onclick = () => {
         stop(); $('time').value = key; hit = available(s) ? s : null;
         put('fitness:target', target());
-        if (hit && snapshotCenter === $('center').value) prepare();
+        if (hit && snapshotCenter === $('center').value) return prepare();
         else $('start').onclick();
       };
       $('choices').append(button);
@@ -107,7 +107,7 @@
   if (profile) { for (const k of ['email','name','member']) $(k).value = profile[k] || ''; $('remember').checked = true; }
   // Reuse information already entered in the original form, without requiring a second entry.
   for(const [id,k] of [['Email','email'],['FirstName','name'],['MemberID','member']]) if(!$(k).value) $(k).value = document.getElementById(id)?.value || '';
-  let running = false, timer, controller, generation = 0, errors = 0, rows = [], snapshotCenter = '', hit = null, audio;
+  let running = false, timer, controller, preparation, generation = 0, errors = 0, rows = [], snapshotCenter = '', hit = null, audio;
   function dateChoices() {
     const days=new Set([$('date').value]);
     const today=new Date(`${hkToday()}T00:00:00Z`);
@@ -149,6 +149,7 @@
   }
   function stop(message) {
     running=false; generation++; clearTimeout(timer); controller?.abort(); controller=null;
+    preparation?.abort(); preparation=null;
     $('start').disabled=false; $('check').disabled=false;
     for (const k of ['center','date','time','interval','noon']) $(k).disabled=false;
     if(message) status(message);
@@ -177,7 +178,8 @@
       const result = hit ? '有空位，点时间按钮选场次；资料使用顶部独立按钮填写。' : !dayRows.length ? '该日期尚未发布场次，继续蹲位。' : !filtered.length ? `没有 ${t.time} 开始的场次；请选择上方时间按钮。` : '暂无空位，正在蹲位；可点满位按钮锁定时间。';
       status(`${new Date().toLocaleTimeString('zh-CN',{timeZone:'Asia/Hong_Kong'})} 香港时间 · ${result}`);
       if(hit && running) {
-        const found=hit; stop(); prepare(); notifyHit(t,found);
+        const found=hit; stop(); const result=await prepare();
+        if(result!=='cancelled' && $('center').value === t.center && $('date').value === t.date) notifyHit(t,found);
       }
     } finally {clearTimeout(timeout); if(controller===request) controller=null;}
   }
@@ -235,28 +237,48 @@
     dateChoices();
     if(k !== 'time') return $('check').onclick();
   };
-  function prepare() {
+  function refreshNativeSessions(center, signal) {
+    return new Promise((resolve,reject)=>{
+      const all=document.getElementById('AllSessions');
+      if(!all) {reject(new Error('原表单缺少场次列表，请刷新页面'));return;}
+      let observer, timeout;
+      const cleanup=()=>{observer?.disconnect();clearTimeout(timeout);signal.removeEventListener('abort',cancel);};
+      const cancel=()=>{cleanup();reject(new Error('已取消场次选择'));};
+      observer=new MutationObserver(()=>{
+        // The site's centre onchange handler owns the options, labels and availability rules.
+        cleanup();resolve();
+      });
+      observer.observe(all,{childList:true,subtree:true});
+      signal.addEventListener('abort',cancel,{once:true});
+      timeout=setTimeout(()=>{cleanup();reject(new Error('原网页加载场次超时，请重试'));},15000);
+      try {setField('CenterID',center);} catch(e) {cleanup();reject(e);}
+    });
+  }
+  async function prepare() {
+    let attempt;
     try {
       const t=target();
       if(!hit || snapshotCenter!==t.center || !matches(hit,t))throw new Error('请先查询并找到符合目标的可订场次');
+      const selected={...hit};
       stop();
-      // Do not trigger the centre's onchange XHR: that would race and overwrite the selected date/hour.
-      document.getElementById('CenterID').value=t.center;
-      const dates=document.getElementById('DateList'), times=document.getElementById('SessionTime'), all=document.getElementById('AllSessions');
-      dates.replaceChildren();times.replaceChildren();all?.replaceChildren();
-      const seen=new Set();
-      for(const s of rows) {
-        const label=`${s.startTime} - ${s.endTime} (${Number(s.spaceRemaining)===99999?'Walk In':Number(s.spaceRemaining)<=0?'Full':`${s.spaceRemaining}/${s.capacity}`})`;
-        if(!seen.has(s.sessionDate)){dates.add(new Option(dateLabel(s.sessionDate),s.sessionDate));seen.add(s.sessionDate);}
-        const op=new Option(label,`${s.sessionDate}:${s.sessionHourID}`);op.disabled=!available(s);all?.add(op);
-        if(s.sessionDate===hit.sessionDate){const option=new Option(label,s.sessionHourID);option.disabled=!available(s);times.add(option);}
-      }
-      dates.value=hit.sessionDate;times.value=String(hit.sessionHourID);
-      document.getElementById('stuStfOnly')?.classList.remove('d-none');
+      preparation=new AbortController();attempt=preparation;
+      status('正在通过原网页选择场次…');
+      await refreshNativeSessions(t.center,attempt.signal);
+      if(attempt.signal.aborted)return 'cancelled';
+      const dates=document.getElementById('DateList'), times=document.getElementById('SessionTime');
+      if(document.getElementById('CenterID').value!==t.center)throw new Error('原网页场馆已更改，请重新选场次');
+      const dateOption=Array.from(dates.options).find(o=>dateKey(o.value)===t.date && !o.disabled);
+      if(!dateOption)throw new Error('原网页尚未提供该日期，请重新查询');
+      setField('DateList',dateOption.value);
+      const timeOption=Array.from(times.options).find(o=>o.value===String(selected.sessionHourID) && !o.disabled);
+      if(!timeOption)throw new Error('原网页显示该场次已不可订，请重新查询');
+      setField('SessionTime',timeOption.value);
       status(`场次已选入：${dateLabel(t.date)}。资料请点顶部「填写资料」，然后完成声明和验证码。`);
-      sessionChoices(rows,t.date,t.time || timeKey(hit.startTime));
+      sessionChoices(rows,t.date,t.time || timeKey(selected.startTime));
       (document.getElementById('gCaptcha') || document.getElementById('SessionTime')).scrollIntoView({behavior:'smooth',block:'center'});
-    }catch(e){status(e.message);}
+      return true;
+    }catch(e){if(!attempt?.signal.aborted)status(e.message);return attempt?.signal.aborted?'cancelled':false;}
+    finally{if(preparation===attempt)preparation=null;}
   }
   document.querySelector('#sbmtBtn')?.addEventListener('click',()=>stop('已停止监测；预约结果以原网站返回页面为准'),{capture:true});
   window.addEventListener('pagehide',()=>stop());
