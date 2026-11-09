@@ -13,14 +13,14 @@
 
 ## 安装试用脚本
 
-**未合并的试用版：** 使用 [feat/safari-support 的 Raw 脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/feat/safari-support/fitness-watcher.user.js)。合并后才使用主 README 的 main 安装链接。无论哪一种管理器，先确认面板显示 **v0.3.1**。
+**未合并的试用版：** 使用 [fix/apple-support-signup 的 Raw 脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/fix/apple-support-signup/fitness-watcher.user.js)。合并后才使用主 README 的 main 安装链接。无论哪一种管理器，先确认面板显示 **v0.3.1**。
 
 ### Mac
 
 1. 从上述官方入口安装脚本管理器，在 Safari「设置 → 扩展」启用它。
 2. 允许扩展访问 `fcbooking.cse.hku.hk`。
 3. 打开试用脚本链接，从管理器完成安装；Tampermonkey 也可新建脚本后粘贴完整源码，Userscripts 可将 `.user.js` 文件存入它配置的脚本目录。
-4. 打开或刷新 [原预约页](https://fcbooking.cse.hku.hk/Form/Signup)，确认助手出现。
+4. 打开或刷新 [原预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，确认助手出现。
 
 ### iPhone
 

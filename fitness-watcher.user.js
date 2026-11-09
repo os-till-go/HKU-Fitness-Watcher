@@ -3,8 +3,8 @@
 // @namespace    hku-toys
 // @version      0.3.1
 // @description  场次余位监测、声音提醒及一键预填；人工验证和提交
-// @match        https://fcbooking.cse.hku.hk/Form/Signup*
 // @match        https://fcbooking.cse.hku.hk/Form/SignUp*
+// @match        https://fcbooking.cse.hku.hk/Form/Signup*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue

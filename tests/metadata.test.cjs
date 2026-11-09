@@ -11,7 +11,7 @@ test('userscript runs on both Signup and SignUp URL spellings, including query s
     const pathPrefix=pattern.pathname.replace(/\*$/,'');
     return target.origin===pattern.origin && target.pathname.startsWith(pathPrefix);
   });
-  for(const path of ['/Form/Signup','/Form/SignUp','/Form/Signup?from=bookmark','/Form/SignUp?from=bookmark']) {
+  for(const path of ['/Form/Signup','/Form/SignUp','/Form/Signup?from=bookmark','/Form/SignUp?from=bookmark','/Form/SignUpPs?CenterID=10002&Date=2026%2F11%2F11&HourID=10143']) {
     assert.equal(accepts('https://fcbooking.cse.hku.hk'+path),true,path);
   }
   assert.equal(accepts('https://example.com/Form/SignUp'),false);

@@ -11,7 +11,7 @@
 ![Tampermonkey](https://img.shields.io/badge/Tampermonkey-userscript-00485b?style=flat-square&logo=tampermonkey)
 ![Dependencies](https://img.shields.io/badge/runtime_dependencies-0-64748b?style=flat-square)
 
-[安装脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js) · [打开预约页](https://fcbooking.cse.hku.hk/Form/Signup) · [功能预览](#功能预览) · [快速开始](#快速开始)
+[安装脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js) · [打开预约页](https://fcbooking.cse.hku.hk/Form/SignUp) · [功能预览](#功能预览) · [快速开始](#快速开始)
 
 </div>
 
@@ -100,9 +100,9 @@
 
 如果没有弹出安装页面：进入 Tampermonkey 管理面板 → 新建脚本 → 删除默认内容 → 粘贴 [脚本源码](fitness-watcher.user.js) → `Ctrl + S` 保存。
 
-打开或刷新 [HKU 健身房预约页](https://fcbooking.cse.hku.hk/Form/Signup)，右上角即可看到助手面板。如果没有出现，检查扩展是否允许在该网站运行，并按 Tampermonkey 提示开启用户脚本权限。
+打开或刷新 [HKU 健身房预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，右上角即可看到助手面板。如果没有出现，检查扩展是否允许在该网站运行，并按 Tampermonkey 提示开启用户脚本权限。
 
-兼容原网站两种地址拼写：`/Form/Signup` 和 `/Form/SignUp`（包括查询参数）。升级后请保存脚本并刷新页面。
+首页 Booking 进入的标准入口是 `/Form/SignUp`。脚本同时兼容 `/Form/Signup` 与 `/Form/SignUp`（包括查询参数及首页场次直达链接）。升级后请保存脚本并刷新页面。
 
 > **面板不显示？** 先确认上述执行权限已开启，再检查脚本已启用、扩展有此网站访问权限，最后刷新预约页。详细步骤见官方 Q209。
 
