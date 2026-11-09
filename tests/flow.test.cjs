@@ -3,7 +3,7 @@ const assert=require('node:assert/strict');
 const vm=require('node:vm');
 const fs=require('node:fs');
 // Lightweight browser adapter: exercise request cancellation and form writes without real bookings.
-function harness(fetcher, savedTarget, nativeSettings={}) {
+async function harness(fetcher, savedTarget, nativeSettings={}) {
   const elements=new Map(), timers=new Map(), storage=new Map(), notices=[];let serial=0;
   const observers=new Set(), nativeQueue=[];let nativeData=[], lastRequest=0;
   class MutationObserver {
@@ -33,8 +33,9 @@ function harness(fetcher, savedTarget, nativeSettings={}) {
     if(nativeSettings.defer)nativeQueue.push(notify);else queueMicrotask(notify);
   }
   if(savedTarget) storage.set('fitness:target',JSON.stringify(savedTarget));
+  if(nativeSettings.savedProfile)storage.set('fitness:profile',JSON.stringify(nativeSettings.savedProfile));
   function element(id='') {
-    return {id,value:'',checked:false,disabled:false,textContent:'',children:[],
+    return {id,value:'',checked:false,disabled:false,textContent:'',children:[],style:{values:new Map(),setProperty(k,v){this.values.set(k,v);}},
       get options(){return this.children;},
       classList:{add(){},remove(){}}, addEventListener(){},dispatchEvent(event){if(event.type==='change'){if(id==='CenterID')nativeRefresh();if(id==='DateList')nativeTimes();}},scrollIntoView(){},checkValidity(){return true;},
       replaceChildren(...children){this.children=children;},add(option){this.children.push(option);},append(...children){this.children.push(...children);},
@@ -50,16 +51,24 @@ function harness(fetcher, savedTarget, nativeSettings={}) {
   const context={document,location:{hostname:'localhost'},localStorage:{getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
     window:{addEventListener(){},focus(){}},Notification,Intl,Date,Event:class {constructor(type){this.type=type;}},Option:class {constructor(text,value){this.text=text;this.value=value;}},MutationObserver,
     AbortController,fetch:async(...args)=>{const request=++lastRequest;const response=await fetcher(...args);return {...response,json:async()=>{const data=await response.json();if(request===lastRequest)nativeData=data;return data;}};}, setTimeout:(fn,delay)=>{const id=++serial;timers.set(id,{fn,delay});return id;},clearTimeout:id=>timers.delete(id)};
-  vm.runInNewContext(fs.readFileSync(require.resolve('../fitness-watcher.user.js'),'utf8'),context);
+  if(nativeSettings.modern)context.GM={
+    getValue:async(k,d)=>JSON.parse(storage.get(k)||'null')??d,
+    setValue:async(k,v)=>{if(nativeSettings.failSave)throw new Error('quota');storage.set(k,JSON.stringify(v));},
+    deleteValue:async k=>storage.delete(k)
+  };
+  if(nativeSettings.noNotification)delete context.Notification;
+  const viewportListeners=new Map();
+  if(nativeSettings.viewport)context.window.visualViewport={...nativeSettings.viewport,addEventListener:(name,fn)=>viewportListeners.set(name,fn)};
+  await vm.runInNewContext(fs.readFileSync(require.resolve('../fitness-watcher.user.js'),'utf8'),context);
   const defaults={center:elements.get('center').value,time:elements.get('time').value};
   elements.get('center').value='10001';elements.get('date').value='2026-11-09';elements.get('time').value='17:00';elements.get('interval').value='10';
-  return {elements,timers,storage,document,defaults,notices,flushNative:()=>{for(const fn of nativeQueue.splice(0))fn();}};
+  return {elements,timers,storage,document,defaults,notices,viewport:context.window.visualViewport,resize:()=>viewportListeners.get('resize')?.(),flushNative:()=>{for(const fn of nativeQueue.splice(0))fn();}};
 }
 const session=remaining=>({sessionDate:'2026/11/09',date:'09/11/2026',sessionHourID:10143,startTime:'1700',endTime:'1830',spaceRemaining:remaining,capacity:60,sessionStatus:'10'});
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
 test('full → release stops polling, applies exact slot, never accepts declaration or submits', async()=>{
   let calls=0;
-  const h=harness(async()=>({ok:true,json:async()=>[session(++calls===1?0:1)]}));
+  const h=await harness(async()=>({ok:true,json:async()=>[session(++calls===1?0:1)]}));
   h.elements.get('start').onclick();await settle();
   assert.equal(calls,1);assert.equal(h.timers.size,1);
   const [id,timer]=[...h.timers][0];h.timers.delete(id);timer.fn();await settle();
@@ -73,33 +82,33 @@ test('full → release stops polling, applies exact slot, never accepts declarat
 });
 test('stop prevents a late response from alerting or replacing last result',async()=>{
   let release;
-  const h=harness(()=>new Promise(resolve=>{release=resolve;}));
+  const h=await harness(()=>new Promise(resolve=>{release=resolve;}));
   h.elements.get('start').onclick();h.elements.get('stop').onclick();
   release({ok:true,json:async()=>[session(1)]});await settle();
   assert.equal(h.elements.get('status').textContent,'已停止监测');assert.equal(h.timers.size,0);
 });
 test('429 stops instead of retrying',async()=>{
-  const h=harness(async()=>({ok:false,status:429}));
+  const h=await harness(async()=>({ok:false,status:429}));
   h.elements.get('start').onclick();await settle();
   assert.equal(h.timers.size,0);assert.match(h.elements.get('status').textContent,/已停止.*429/);
 });
-test('profile storage is opt-in and clears when unchecked',()=>{
-  const h=harness(()=>{});
+test('profile storage is opt-in and clears when unchecked',async()=>{
+  const h=await harness(()=>{});
   for(const [id,value] of [['email','demo@example.com'],['name','Demo'],['member','1234567890']])h.elements.get(id).value=value;
-  h.elements.get('fill').onclick();assert.equal(h.storage.has('fitness:profile'),false);
+  await h.elements.get('fill').onclick();assert.equal(h.storage.has('fitness:profile'),false);
   assert.equal(h.elements.get('MemberID').value,'1234567890');
-  h.elements.get('remember').checked=true;h.elements.get('fill').onclick();assert.equal(h.storage.has('fitness:profile'),true);
-  h.elements.get('remember').checked=false;h.elements.get('remember').onchange();assert.equal(h.storage.has('fitness:profile'),false);
+  h.elements.get('remember').checked=true;await h.elements.get('fill').onclick();assert.equal(h.storage.has('fitness:profile'),true);
+  h.elements.get('remember').checked=false;await h.elements.get('remember').onchange();assert.equal(h.storage.has('fitness:profile'),false);
 });
-test('default B-Active, any session; migrate accidental legacy clock input',()=>{
+test('default B-Active, any session; migrate accidental legacy clock input',async()=>{
   for(const saved of [undefined,{center:'10001',time:'15:49',date:'2026-11-09'}]) {
-    const h=harness(()=>{},saved);
+    const h=await harness(()=>{},saved);
     assert.equal(h.defaults.center,'10002');
     assert.equal(h.defaults.time,'');
   }
 });
 test('any session finds 17:00 availability and loads actual choices',async()=>{
-  const h=harness(async()=>({ok:true,json:async()=>[session(4)]}));
+  const h=await harness(async()=>({ok:true,json:async()=>[session(4)]}));
   h.elements.get('time').value='';
   await h.elements.get('check').onclick();
   assert.match(h.elements.get('status').textContent,/有空位/);
@@ -107,7 +116,7 @@ test('any session finds 17:00 availability and loads actual choices',async()=>{
   assert.match(h.elements.get('choices').children[0].textContent,/17:00.*18:30/);
 });
 test('query resets obsolete clock filter and exposes actual available session buttons',async()=>{
-  const h=harness(async()=>({ok:true,json:async()=>[session(4)]}));
+  const h=await harness(async()=>({ok:true,json:async()=>[session(4)]}));
   h.elements.get('time').value='15:49';
   await h.elements.get('check').onclick();
   assert.match(h.elements.get('status').textContent,/有空位/);
@@ -117,20 +126,20 @@ function profile(h) {
   for(const [id,value] of [['email','demo@example.com'],['name','Demo'],['member','1234567890']])h.elements.get(id).value=value;
 }
 test('slot selection and the top profile button operate independently',async()=>{
-  const h=harness(async()=>({ok:true,json:async()=>[session(4)]})); profile(h);
+  const h=await harness(async()=>({ok:true,json:async()=>[session(4)]})); profile(h);
   await h.elements.get('check').onclick();
   await h.elements.get('choices').children[0].onclick();
   assert.equal(h.elements.get('SessionTime').value,'10143');
   assert.equal(h.elements.get('MemberID').value,'');
   assert.match(h.elements.get('status').textContent,/场次已选入/);
-  h.elements.get('fill').onclick();
+  await h.elements.get('fill').onclick();
   assert.equal(h.elements.get('MemberID').value,'1234567890');
   assert.match(h.elements.get('status').textContent,/资料已填写/);
   assert.equal(h.timers.size,0);
 });
 test('release selects slot without filling profile; alert remains until dismissed',async()=>{
   let calls=0;
-  const h=harness(async()=>({ok:true,json:async()=>[session(++calls===1?0:1)]})); profile(h);
+  const h=await harness(async()=>({ok:true,json:async()=>[session(++calls===1?0:1)]})); profile(h);
   await h.elements.get('check').onclick();
   assert.equal(h.timers.size,1);
   const [id,timer]=[...h.timers][0];h.timers.delete(id);timer.fn();await settle();
@@ -146,7 +155,7 @@ test('release selects slot without filling profile; alert remains until dismisse
   assert.equal(h.notices[0].closed,true);
 });
 test('clicking a full time button locks monitoring to that session',async()=>{
-  const h=harness(async()=>({ok:true,json:async()=>[session(0),{...session(3),startTime:'1845',sessionHourID:10144}]})); profile(h);
+  const h=await harness(async()=>({ok:true,json:async()=>[session(0),{...session(3),startTime:'1845',sessionHourID:10144}]})); profile(h);
   await h.elements.get('check').onclick();
   h.elements.get('choices').children[0].onclick();await settle();
   assert.equal(h.elements.get('SessionTime').value,'');
@@ -156,7 +165,7 @@ test('clicking a full time button locks monitoring to that session',async()=>{
 test('date remains editable during monitoring; day button switches and queries automatically',async()=>{
   const data=[session(0),{...session(3),sessionDate:'2026/11/10',date:'10/11/2026'}];
   let calls=0;
-  const h=harness(async()=>{calls++;return {ok:true,json:async()=>data};});
+  const h=await harness(async()=>{calls++;return {ok:true,json:async()=>data};});
   h.elements.get('start').onclick();await settle();
   assert.equal(h.elements.get('date').disabled,false);
   assert.equal(h.elements.get('center').disabled,false);
@@ -172,7 +181,7 @@ test('date remains editable during monitoring; day button switches and queries a
 });
 test('changing date ignores late response from previous date and cancels old monitoring',async()=>{
   let resolveOld, calls=0;
-  const h=harness(()=>{
+  const h=await harness(()=>{
     if(++calls===1)return new Promise(resolve=>{resolveOld=resolve;});
     return Promise.resolve({ok:true,json:async()=>[{...session(3),sessionDate:'2026/11/10'}]});
   });
@@ -185,14 +194,14 @@ test('changing date ignores late response from previous date and cancels old mon
   assert.equal(h.elements.get('DateList').value,'2026/11/10');
   assert.equal(h.timers.size,0);
 });
-test('top fill button works before any session query and leaves slot selection unchanged',()=>{
-  const h=harness(()=>{throw new Error('should not query');});profile(h);
-  h.elements.get('fill').onclick();
+test('top fill button works before any session query and leaves slot selection unchanged',async()=>{
+  const h=await harness(()=>{throw new Error('should not query');});profile(h);
+  await h.elements.get('fill').onclick();
   assert.equal(h.elements.get('Email').value,'demo@example.com');
   assert.equal(h.elements.get('SessionTime').value,'');
 });
 test('native date labels and native option structure survive selection',async()=>{
-  const h=harness(async()=>({ok:true,json:async()=>[session(3)]}));
+  const h=await harness(async()=>({ok:true,json:async()=>[session(3)]}));
   await h.elements.get('check').onclick();
   await h.elements.get('choices').children[0].onclick();
   assert.equal(h.elements.get('DateList').options[0].text,'09/11/2026 Monday');
@@ -201,18 +210,46 @@ test('native date labels and native option structure survive selection',async()=
   assert.equal(h.elements.get('SessionTime').options[0].value,'10143');
 });
 test('native site availability wins over older watcher availability',async()=>{
-  const h=harness(async()=>({ok:true,json:async()=>[session(3)]}),undefined,{remaining:0});
+  const h=await harness(async()=>({ok:true,json:async()=>[session(3)]}),undefined,{remaining:0});
   await h.elements.get('check').onclick();
   await h.elements.get('choices').children[0].onclick();
   assert.match(h.elements.get('status').textContent,/原网页显示该场次已不可订/);
   assert.notEqual(h.elements.get('SessionTime').value,'10143');
 });
 test('stop cancels in-progress native selection and ignores delayed option notifications',async()=>{
-  const h=harness(async()=>({ok:true,json:async()=>[session(3)]}),undefined,{defer:true});
+  const h=await harness(async()=>({ok:true,json:async()=>[session(3)]}),undefined,{defer:true});
   await h.elements.get('check').onclick();
   const preparing=h.elements.get('choices').children[0].onclick();
   h.elements.get('stop').onclick();h.flushNative();await preparing;
   assert.equal(h.elements.get('status').textContent,'已停止监测');
   assert.equal(h.elements.get('SessionTime').value,'');
   assert.equal(h.timers.size,0);
+});
+test('Userscripts-style async storage hydrates saved profile and deletes it',async()=>{
+  const h=await harness(()=>{},undefined,{modern:true,savedProfile:{email:'demo@example.com',name:'Demo',member:'1234567890'}});
+  assert.equal(h.elements.get('email').value,'demo@example.com');
+  assert.equal(h.elements.get('remember').checked,true);
+  await h.elements.get('fill').onclick();assert.equal(h.elements.get('MemberID').value,'1234567890');
+  await h.elements.get('forget').onclick();assert.equal(h.storage.has('fitness:profile'),false);
+});
+test('save failure does not report a saved profile or lose the filled form',async()=>{
+  const h=await harness(()=>{},undefined,{modern:true,failSave:true});profile(h);h.elements.get('remember').checked=true;
+  await h.elements.get('fill').onclick();
+  assert.match(h.elements.get('status').textContent,/保存.*失败/);
+  assert.equal(h.elements.get('MemberID').value,'1234567890');
+  assert.equal(h.storage.has('fitness:profile'),false);
+});
+test('missing iPhone notification API gives explicit fallback and preserves page alert',async()=>{
+  const h=await harness(async()=>({ok:true,json:async()=>[session(3)]}),undefined,{noNotification:true});
+  await h.elements.get('notify').onclick();assert.match(h.elements.get('status').textContent,/不支持系统通知.*页内提醒/);
+  h.elements.get('start').onclick();await settle();
+  assert.equal(h.elements.get('alert').hidden,false);assert.equal(h.notices.length,0);
+});
+test('mobile viewport resize updates panel height; collapse leaves form fields untouched',async()=>{
+  const h=await harness(()=>{},undefined,{viewport:{height:700,offsetTop:0}});
+  h.viewport.height=280;h.viewport.offsetTop=40;h.resize();
+  assert.equal(h.document.body.children[0].style.values.get('--fw-height'),'280px');
+  assert.equal(h.document.body.children[0].style.top,'58px');
+  h.elements.get('collapse').onclick();assert.equal(h.elements.get('panel').open,false);
+  assert.equal(h.elements.get('MemberID').value,'');
 });
