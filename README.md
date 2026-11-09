@@ -6,7 +6,7 @@
 
 港大健身房蹲位与填表助手 · 直接运行在原预约页上
 
-![Version](https://img.shields.io/badge/version-0.2.1-17a776?style=flat-square)
+![Version](https://img.shields.io/badge/version-0.2.2-17a776?style=flat-square)
 ![JavaScript](https://img.shields.io/badge/JavaScript-vanilla-f7df1e?style=flat-square&logo=javascript&logoColor=222)
 ![Tampermonkey](https://img.shields.io/badge/Tampermonkey-userscript-00485b?style=flat-square&logo=tampermonkey)
 ![Dependencies](https://img.shields.io/badge/runtime_dependencies-0-64748b?style=flat-square)
@@ -85,11 +85,20 @@
 
 在 Chrome / Edge 安装 [Tampermonkey](https://www.tampermonkey.net/)，然后打开：
 
+**先开启用户脚本执行权限。** 按 [Tampermonkey 官方 FAQ Q209](https://www.tampermonkey.net/faq.php?q=Q209#Q209)，Tampermonkey 5.3+ 在 Chromium 浏览器中需要启用「允许用户脚本」或「开发者模式」：
+
+- **Chrome / Edge**：打开 `chrome://extensions` / `edge://extensions`，开启「开发者模式」。
+- **Chrome 138+**：也可进入 Tampermonkey 的扩展详情，开启 **Allow User Scripts / 允许用户脚本**；该开关可用时，这是另一条执行权限设置路径。
+
+权限开启后再安装脚本；已经安装过的，刷新预约页即可。不需要打开网页的 F12 开发者工具。
+
 **[→ 安装 HKU Fitness Watcher](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js)**
 
 如果没有弹出安装页面：进入 Tampermonkey 管理面板 → 新建脚本 → 删除默认内容 → 粘贴 [脚本源码](fitness-watcher.user.js) → `Ctrl + S` 保存。
 
 打开或刷新 [HKU 健身房预约页](https://fcbooking.cse.hku.hk/Form/Signup)，右上角即可看到助手面板。如果没有出现，检查扩展是否允许在该网站运行，并按 Tampermonkey 提示开启用户脚本权限。
+
+> **面板不显示？** 先确认上述执行权限已开启，再检查脚本已启用、扩展有此网站访问权限，最后刷新预约页。详细步骤见官方 Q209。
 
 ### 2 · 准备资料
 
@@ -111,6 +120,7 @@ flowchart TD
 ```
 
 - **有位**：点时间按钮即可选入场次。
+- **原表单保留原样**：v0.2.2 通过原网页的场馆和日期联动加载选项，仅选择目标值，不再重建原表单下拉列表。原日期仍显示类似 `10/11/2026 Tuesday`；助手面板和通知保留中英文星期格式。若原网页重新加载后显示已不可订，会提示重新查询。
 - **没位**：自动开始蹲当天任意场次；只想要一个时段，就点对应的满位按钮。锁定时段后，“暂无空位”指该目标场次；其他时段仍可能有余位。
 - **换日期**：直接点日期按钮或修改日期输入框。旧查询和旧监测会被取消，自动查询新日期。
 - **停止**：点击「停止蹲位」。刷新页面后不会自动恢复监测。
@@ -166,7 +176,7 @@ fitness-watcher.user.js   油猴脚本
  docs/screenshots/        实际使用截图与图注
 ```
 
-当前包含 **16 项本地测试**，覆盖日期切换、旧请求取消、满位后放位、独立填写资料、通知常驻选项、限流与存储。流程测试使用轻量 DOM 适配器；真实预约提交与真实退位事件尚未端到端验证。
+当前包含 **19 项本地测试**，覆盖原网页日期标签保持、原网页不可订校验、选择中途取消、日期切换、旧请求取消、满位后放位、独立填写资料、通知常驻选项、限流与存储。流程测试使用轻量 DOM 适配器；真实预约提交与真实退位事件尚未端到端验证。
 
 ---
 
