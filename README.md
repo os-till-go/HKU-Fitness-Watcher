@@ -11,7 +11,7 @@
 ![Tampermonkey](https://img.shields.io/badge/Tampermonkey-userscript-00485b?style=flat-square&logo=tampermonkey)
 ![Dependencies](https://img.shields.io/badge/runtime_dependencies-0-64748b?style=flat-square)
 
-[安装脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js) · [打开预约页](https://fcbooking.cse.hku.hk/Form/SignUp) · [功能预览](#功能预览) · [快速开始](#快速开始)
+[首次安装](#quick-start) · [打开预约页](https://fcbooking.cse.hku.hk/Form/SignUp) · [功能预览](#功能预览) · [日常使用](#daily-use)
 
 </div>
 
@@ -24,6 +24,77 @@
 > 选场次和填写资料各有独立按钮；声明、验证码与最终提交仍由你完成。看到空位或选中场次，都不代表已经占位。
 
 **Safari 试用版：** v0.3.1 已增加 Tampermonkey / Userscripts 存储接口兼容、触控尺寸、收起助手及通知降级提示。用户已反馈 iPhone Safari + Userscripts 的 v0.3.0 基本功能可用，设备与系统版本待补；Mac Safari 仍未验证。v0.3.1 另修复了 `Signup` / `SignUp` 地址兼容。安装及回报步骤见 [Safari 试用指南](docs/safari.md)，进度见 [Issue #4](https://github.com/os-till-go/HKU-Fitness-Watcher/issues/4)。
+
+<a id="quick-start"></a>
+## 快速开始 · 先选你正在使用的浏览器
+
+**第一次使用：装脚本管理器 → 启用它 → 安装助手脚本 → 打开预约页。** 下载和安装都在你准备预约的同一个浏览器里完成。
+
+| 你的设备和浏览器 | 要下载什么 | 看哪一份教程 |
+| --- | --- | --- |
+| Windows / Mac 上的 **Edge** | Tampermonkey（免费） | [Edge 安装步骤](#install-edge) |
+| Windows / Mac 上的 **Chrome** | Tampermonkey（免费） | [Chrome 安装步骤](#install-chrome) |
+| **iPhone / iPad Safari** | Userscripts（免费） | [iPhone Safari 安装步骤](#install-iphone) |
+| **Mac Safari** | Userscripts（免费） | [Mac Safari 安装步骤](#install-mac-safari) |
+
+**Mac 用 Chrome，就看 Chrome 教程；用 Safari，才看 Safari 教程。** Safari 版 Tampermonkey 有付费门槛，这里采用免费的 Userscripts。
+
+iPhone Safari + Userscripts 已有用户反馈基本可用；Mac Safari 仍待实机验证。详细设备测试记录见 [Issue #4](https://github.com/os-till-go/HKU-Fitness-Watcher/issues/4)。
+
+<a id="install-edge"></a>
+### Edge · Windows / Mac
+
+1. **下载扩展。** 用 Edge 打开 [Tampermonkey 官方 Edge 商店页](https://microsoftedge.microsoft.com/addons/detail/iikmkjmpaadaobahmlepeloendndfphd)，点「获取」→「添加扩展」。完成后，在浏览器工具栏的扩展菜单里应能找到 Tampermonkey。
+2. **允许执行脚本。** 在 Edge 地址栏输入 `edge://extensions` 并回车，开启「开发者模式」，确认 Tampermonkey 已启用。如果扩展详情提供「允许用户脚本」开关，也可按扩展提示开启。这里指扩展管理页的开关，不是 F12 网页开发者工具。
+3. **安装助手。** 仍在 Edge 中打开 [HKU Fitness Watcher 安装脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js)。若出现 Tampermonkey 安装页面，点「安装」（已有旧版时可能显示「更新」）。
+4. **如果只看到代码。** 全选复制该页代码 → 打开工具栏的 Tampermonkey →「管理面板」→「新建脚本 / ＋」→ 删除默认代码并粘贴 → 点击编辑器的「文件 → 保存」。确认脚本列表中出现 HKU Fitness Watcher，且已启用。
+5. **打开预约页。** 点击 [进入健身房预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，已有页面就刷新。出现 **HKU Fitness Watcher · v0.3.1** 面板即安装成功，接着看 [安装后怎么用](#daily-use)。
+
+<a id="install-chrome"></a>
+### Chrome · Windows / Mac
+
+1. **下载扩展。** 用 Chrome 打开 [Tampermonkey 官方 Chrome 商店页](https://chromewebstore.google.com/detail/dhdgffkkebhmkfjojejmpbldmpobfkfo)，点「添加至 Chrome」→「添加扩展」。商店打不开时可从 [Tampermonkey 官网 Chrome 入口](https://www.tampermonkey.net/index.php?browser=chrome)进入。
+2. **允许执行脚本。** 在地址栏输入 `chrome://extensions` 并回车，找到 Tampermonkey →「详细信息」。若有 **Allow User Scripts / 允许用户脚本**，将它打开；如果没有这个开关，在扩展管理页开启「开发者模式」。确认 Tampermonkey 本身也已启用。两条执行权限路径任选可用的一条，依据 [官方 Q209](https://www.tampermonkey.net/faq.php?q=Q209#Q209)。
+3. **安装助手。** 仍在 Chrome 中打开 [HKU Fitness Watcher 安装脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js)，在 Tampermonkey 安装页点击「安装 / 更新」。
+4. **如果只看到代码。** 全选复制代码 → 工具栏的扩展菜单 → Tampermonkey →「管理面板」→「新建脚本 / ＋」→ 删除默认代码并粘贴 → 点击编辑器的「文件 → 保存」。确认 HKU Fitness Watcher 已启用。
+5. **打开预约页。** 点击 [进入健身房预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，已有页面就刷新。看到 **v0.3.1** 助手面板后，按 [安装后怎么用](#daily-use) 操作。
+
+<a id="install-iphone"></a>
+### iPhone / iPad · Safari + Userscripts
+
+1. **下载免费 App。** 从 App Store 安装 [Userscripts（开发者 Justin Wasack）](https://apps.apple.com/hk/app/userscripts/id1463298887)，安装后先打开一次。
+2. **确认脚本文件夹。** 在 Userscripts App 中确认它使用的脚本目录；新版可能已有默认目录。如果提示选择文件夹，就选一个专门放脚本的文件夹并确认。**这一步只是告诉 App 去哪里找脚本，后面还要启用 Safari 扩展。**
+3. **启用 Safari 扩展。** 打开 iPhone「设置 → App → Safari 浏览器 → 扩展 → Userscripts」，开启「允许扩展」。旧版系统入口可能是「设置 → Safari 浏览器 → 扩展」。iPad 同样在 Safari 的扩展设置中启用。
+4. **在 Safari 安装脚本。** 用 Safari App 打开 [HKU Fitness Watcher 脚本文件](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js)。点地址栏旁的「页面菜单」（旧版显示 `aA`）→「扩展 / 管理扩展」→ **Userscripts** → 按安装提示确认。不同系统菜单布局略有差异；若询问当前网站访问权限，按提示允许。
+5. **已经下载到文件夹了？** 可以直接使用文件方式：确认 `fitness-watcher.user.js` 位于第 2 步选定的目录内。文件名不能以 `.txt` 或 `.html` 结尾，也不要只把文件夹选到了它的上一级。两种安装方式选一种即可。
+6. **授权预约网站并启动。** 在 Safari 打开 [健身房预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，再从页面菜单打开 Userscripts。允许访问 `fcbooking.cse.hku.hk`（可选择始终允许），确认脚本启用，然后刷新。看到 **HKU Fitness Watcher · v0.3.1** 即可按 [安装后怎么用](#daily-use) 操作。
+
+> **找不到 Userscripts？** 返回第 3 步检查；在 Safari 的「管理扩展」里也确认它已开启。能打开扩展但没有脚本，就检查第 2、5 步的目录和文件。选择了文件夹，并不代表 Safari 扩展已经开启。手机请保持预约页在前台；点「收起助手」后可操作原网页。
+
+<a id="install-mac-safari"></a>
+### Mac · Safari + Userscripts
+
+1. **下载免费 App。** 在 Mac App Store 安装 [Userscripts（开发者 Justin Wasack）](https://apps.apple.com/hk/app/userscripts/id1463298887)，然后打开一次。通常可使用它的默认脚本目录。
+2. **启用 Safari 扩展。** 打开 Safari → 菜单栏「Safari 浏览器 → 设置 → 扩展」（旧版可能叫「偏好设置」），勾选 Userscripts。如果要求授权，在相关网站设置中允许它访问预约网站。
+3. **安装助手。** 用 Safari 打开 [HKU Fitness Watcher 脚本文件](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js)，点击工具栏的 Userscripts 扩展图标，按提示安装。若没有安装提示，可把完整的 `fitness-watcher.user.js` 文件放入 Userscripts 配置的脚本目录。
+4. **打开预约页并授权。** 进入 [健身房预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，允许 Userscripts 访问此网站并确认脚本已启用，然后刷新。出现 **v0.3.1** 助手面板表示已成功运行，接着看 [安装后怎么用](#daily-use)。
+
+Safari 不需要照搬 Chrome / Edge 的开发者模式步骤。安装入口与目录说明依据 [Userscripts 官方文档](https://github.com/quoid/userscripts#usage)；Safari 扩展入口可参考 [Apple 的 iPhone 指南](https://support.apple.com/zh-cn/guide/iphone/iphab0432bf6/ios)和 [Mac 指南](https://support.apple.com/zh-cn/102343)。
+
+<a id="install-help"></a>
+### 安装卡住了？按看到的现象排查
+
+| 现象 | 下一步 |
+| --- | --- |
+| 点「脚本文件」后只有一整页代码 | 这是脚本内容页。Chrome / Edge 按各自第 4 步手动保存；Safari 打开 Userscripts 的安装菜单或存入脚本目录 |
+| Userscripts App 一直让我选文件夹 | 选定目录后，继续到 Safari 设置里启用扩展；脚本实际在 Safari 网页中运行 |
+| Safari 菜单里找不到 Userscripts | 检查系统设置中的扩展启用状态，以及 Safari「管理扩展」和当前用户场景的启用状态 |
+| 扩展能打开，里面没有脚本 | 检查文件是否真的在所选目录，后缀是否为 `.user.js`，脚本是否启用 |
+| 扩展和脚本已装好，预约页没有助手 | Chrome / Edge 检查执行权限；Safari 检查网站授权。完成后刷新预约页 |
+| 只在某个预约地址不显示 | 更新到 v0.3.1 或更新版本；它兼容 `SignUp`、`Signup` 和首页场次直达链接 |
+| 昨天能用，今天打开只有代码 | 打开了脚本下载链接。日常使用应打开 [预约页](https://fcbooking.cse.hku.hk/Form/SignUp) |
+
+仍未解决时，在 [Issues](https://github.com/os-till-go/HKU-Fitness-Watcher/issues) 提供设备、浏览器、脚本管理器及版本，以及卡在哪一步。截图请遮挡个人资料。
 
 ## 功能预览
 
@@ -81,38 +152,20 @@
 
 点击任意截图可查看原图。
 
-## 快速开始
+<a id="daily-use"></a>
+## 安装后怎么启动和使用
 
-### 1 · 安装
+**以后每次只需打开 [预约页](https://fcbooking.cse.hku.hk/Form/SignUp)。** 助手会随网页出现，不需要每次重新下载脚本或打开脚本管理器 App。也可以从 [网站首页](https://fcbooking.cse.hku.hk/) 点击 **Booking** 进入。
 
-**Mac / iPhone Safari** 请使用 [Safari 试用指南](docs/safari.md)。下面的开发者模式步骤仅针对 Chromium 浏览器，不适用于 Safari。
+确认页面中出现 **HKU Fitness Watcher · v0.3.1**，再按下面步骤操作；手机上若面板收起，点标题展开。
 
-在 Chrome / Edge 安装 [Tampermonkey](https://www.tampermonkey.net/)，然后打开：
-
-**先开启用户脚本执行权限。** 按 [Tampermonkey 官方 FAQ Q209](https://www.tampermonkey.net/faq.php?q=Q209#Q209)，Tampermonkey 5.3+ 在 Chromium 浏览器中需要启用「允许用户脚本」或「开发者模式」：
-
-- **Chrome / Edge**：打开 `chrome://extensions` / `edge://extensions`，开启「开发者模式」。
-- **Chrome 138+**：也可进入 Tampermonkey 的扩展详情，开启 **Allow User Scripts / 允许用户脚本**；该开关可用时，这是另一条执行权限设置路径。
-
-权限开启后再安装脚本；已经安装过的，刷新预约页即可。不需要打开网页的 F12 开发者工具。
-
-**[→ 安装 HKU Fitness Watcher](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js)**
-
-如果没有弹出安装页面：进入 Tampermonkey 管理面板 → 新建脚本 → 删除默认内容 → 粘贴 [脚本源码](fitness-watcher.user.js) → `Ctrl + S` 保存。
-
-打开或刷新 [HKU 健身房预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，右上角即可看到助手面板。如果没有出现，检查扩展是否允许在该网站运行，并按 Tampermonkey 提示开启用户脚本权限。
-
-首页 Booking 进入的标准入口是 `/Form/SignUp`。脚本同时兼容 `/Form/Signup` 与 `/Form/SignUp`（包括查询参数及首页场次直达链接）。升级后请保存脚本并刷新页面。
-
-> **面板不显示？** 先确认上述执行权限已开启，再检查脚本已启用、扩展有此网站访问权限，最后刷新预约页。详细步骤见官方 Q209。
-
-### 2 · 准备资料
+### 1 · 填写资料
 
 展开顶部「编辑 / 保存资料」，输入邮箱、卡面姓名、学号 / 员工号，再点 **「填写资料」**。
 
 需要下次复用时勾选保存。也可以直接复用原表单里已输入的资料。填写资料不要求先查询或选场次，蹲位期间也可以使用。
 
-### 3 · 查场次，或蹲一个时段
+### 2 · 查场次，或蹲一个时段
 
 ```mermaid
 flowchart TD
@@ -131,7 +184,7 @@ flowchart TD
 - **换日期**：直接点日期按钮或修改日期输入框。旧查询和旧监测会被取消，自动查询新日期。
 - **停止**：点击「停止蹲位」。刷新页面后不会自动恢复监测。
 
-### 4 · 打开提醒
+### 3 · 打开提醒
 
 在「蹲位设置 / 通知」中点击「启用桌面通知 / 测试声音」，并允许浏览器通知。
 

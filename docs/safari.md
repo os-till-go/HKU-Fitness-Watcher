@@ -2,35 +2,18 @@
 
 目标是 Mac 和 iPhone 的**前台预约辅助**。用户已反馈 iPhone Safari + Userscripts 的 v0.3.0 基本功能可用，设备与系统版本尚未记录；Mac Safari 仍待验证。朋友使用 Mac Chrome，属于 Chromium 测试，不能作为 Mac Safari 的验证。v0.3.1 修复了原网址 `Signup` / `SignUp` 大小写差异，请更新脚本后复核。请在 [Issue #4](https://github.com/os-till-go/HKU-Fitness-Watcher/issues/4) 分别记录设备结果。
 
-## 选择脚本管理器
+## 安装与启动
 
-| 方案 | 安装入口 | 本次处理 |
-| --- | --- | --- |
-| Tampermonkey Safari | [官方 Safari 下载页](https://www.tampermonkey.net/index.php?browser=safari&locale=en) | 兼容同步旧 API 与异步 GM API |
-| Userscripts | [App Store](https://apps.apple.com/app/id1463298887) · [官方项目文档](https://github.com/quoid/userscripts) | 兼容异步 `GM.getValue / setValue / deleteValue` |
+完整步骤已统一放到主 README，按设备选择即可：
 
-任选一个开始测试，不要同时让两个管理器运行同一脚本。不要将 Chrome / Edge 的开发者模式步骤套到 Safari。
+- [iPhone / iPad Safari：下载、文件夹、启用扩展、安装脚本和网站授权](../README.md#install-iphone)
+- [Mac Safari：下载、启用扩展、安装脚本和启动](../README.md#install-mac-safari)
+- [Mac Chrome：使用 Chrome 安装教程](../README.md#install-chrome)
+- [安装排错](../README.md#install-help) · [每天怎么启动](../README.md#daily-use)
 
-## 安装试用脚本
+当前正式脚本已合并至 main，使用 [main 的完整脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/main/fitness-watcher.user.js)，安装后应显示 **v0.3.1**（或后续更新版本）。Safari 默认推荐免费的 [Userscripts](https://apps.apple.com/hk/app/userscripts/id1463298887)。
 
-**未合并的试用版：** 使用 [fix/apple-support-signup 的 Raw 脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/fix/apple-support-signup/fitness-watcher.user.js)。合并后才使用主 README 的 main 安装链接。无论哪一种管理器，先确认面板显示 **v0.3.1**。
-
-### Mac
-
-1. 从上述官方入口安装脚本管理器，在 Safari「设置 → 扩展」启用它。
-2. 允许扩展访问 `fcbooking.cse.hku.hk`。
-3. 打开试用脚本链接，从管理器完成安装；Tampermonkey 也可新建脚本后粘贴完整源码，Userscripts 可将 `.user.js` 文件存入它配置的脚本目录。
-4. 打开或刷新 [原预约页](https://fcbooking.cse.hku.hk/Form/SignUp)，确认助手出现。
-
-### iPhone
-
-1. 安装并打开脚本管理器 App，按 App 提示完成初始设置。Userscripts 需要确认用于读取脚本的目录；不同版本可能已经有默认目录。
-2. 在系统设置中找到 Safari 的「扩展」，启用管理器；在 Safari 中授予它此预约网站的访问权限。系统版本不同，设置入口的位置可能不同，可搜索 Safari。
-3. 在 Safari 打开试用脚本链接。使用 Userscripts 时，打开 Safari 的扩展菜单，从 Userscripts 的安装提示安装；也可将下载的 `.user.js` 放入已配置目录。
-4. 返回预约页并刷新。先展开面板确认版本；打开键盘编辑资料时检查按钮是否仍可操作。
-5. 使用顶部「收起助手」或面板标题收起它，再操作原网页声明与验证码。点击标题可重新展开。
-
-Userscripts 的安装方式和异步 API 以 [发布分支文档](https://github.com/quoid/userscripts/tree/release/4.x.x) 为依据；请在反馈中带上实际安装的管理器版本。
+下面保留设备验收和反馈表，供安装成功后测试使用。
 
 ## 测试顺序
 
@@ -78,4 +61,4 @@ Safari 版本（若可查）：
 截图（遮挡姓名、邮箱、学号）：
 ```
 
-即使本地测试通过，也应等到你和朋友完成相关设备验收后，才将 Safari 标为已支持。关联 PR 使用 `Refs #4` 保留 issue，避免合并代码就自动关闭未完成的实机验证。
+即使本地测试通过，也应等到你和朋友完成相关设备验收后，才将 Safari 标为已支持。Issue #4 保留设备测试记录，代码合并不代表所有设备组合都完成了实机验收。
