@@ -1,17 +1,21 @@
 // ==UserScript==
 // @name         HKU Fitness Watcher 健身房蹲位
 // @namespace    hku-toys
-// @version      0.2.2
+// @version      0.3.0
 // @description  场次余位监测、声音提醒及一键预填；人工验证和提交
 // @match        https://fcbooking.cse.hku.hk/Form/Signup*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
+// @grant        GM.getValue
+// @grant        GM.setValue
+// @grant        GM.deleteValue
 // @run-at       document-idle
+// @inject-into  content
 // @noframes
 // ==/UserScript==
 
-(() => {
+(async () => {
   'use strict';
   const dateKey = value => {
     const s = String(value || '');
@@ -32,26 +36,49 @@
   const available = s => Number(s.spaceRemaining) > 0 && Number(s.spaceRemaining) !== 99999 && String(s.sessionStatus) !== '20';
   const matches = (s, target) => dateKey(s.sessionDate) === target.date && (!target.time || timeKey(s.startTime) === timeKey(target.time));
   const nextDelay = (seconds, errors = 0) => Math.min(300000, Math.max(10, Number(seconds) || 30) * 1000 * 2 ** Math.min(errors, 5));
-  if (typeof module !== 'undefined' && module.exports) module.exports = { dateKey, dateLabel, timeKey, available, matches, nextDelay };
+  function createStorage({modern, legacy, demoStorage} = {}) {
+    const valid = api => api && ['getValue','setValue','deleteValue'].every(k=>typeof api[k]==='function');
+    const memory=new Map();
+    const api=valid(modern)?modern:valid(legacy)?legacy:demoStorage?{
+      getValue:(k,d)=>JSON.parse(demoStorage.getItem(k) || 'null') ?? d,
+      setValue:(k,v)=>demoStorage.setItem(k,JSON.stringify(v)),deleteValue:k=>demoStorage.removeItem(k)
+    }:{getValue:(k,d)=>memory.get(k) ?? d,setValue:(k,v)=>memory.set(k,v),deleteValue:k=>memory.delete(k)};
+    let pending=Promise.resolve();
+    const enqueue=operation=>{const next=pending.then(operation);pending=next.catch(()=>{});return next;};
+    return {
+      persistent:!!(valid(modern)||valid(legacy)||demoStorage),
+      get:async k=>{await pending;return api.getValue(k,null);},
+      put:(k,v)=>enqueue(()=>api.setValue(k,v)),erase:k=>enqueue(()=>api.deleteValue(k))
+    };
+  }
+  if (typeof module !== 'undefined' && module.exports) module.exports = { dateKey, dateLabel, timeKey, available, matches, nextDelay, createStorage };
   if (typeof document === 'undefined') return;
   if (!document.querySelector('#CenterID') || document.querySelector('#fitness-watcher')) return;
 
   const demo = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  const get = key => typeof GM_getValue === 'function' ? GM_getValue(key, null) : demo ? JSON.parse(localStorage.getItem(key) || 'null') : null;
-  const put = (key, value) => typeof GM_setValue === 'function' ? GM_setValue(key, value) : demo && localStorage.setItem(key, JSON.stringify(value));
-  const erase = key => typeof GM_deleteValue === 'function' ? GM_deleteValue(key) : demo && localStorage.removeItem(key);
+  const storage=createStorage({modern:typeof GM==='undefined'?null:GM,legacy:{
+    getValue:typeof GM_getValue==='function'?GM_getValue:null,
+    setValue:typeof GM_setValue==='function'?GM_setValue:null,
+    deleteValue:typeof GM_deleteValue==='function'?GM_deleteValue:null
+  },demoStorage:demo?localStorage:null});
+  const {get,put,erase}=storage;
+  let storageWarning='';
+  const load=async key=>{try{return await get(key);}catch{storageWarning='读取已存资料失败；可手动填写并重试';return null;}};
+  const [savedConfig,profile]=await Promise.all([load('fitness:target'),load('fitness:profile')]);
+  if(document.querySelector('#fitness-watcher'))return;
   const host = document.createElement('div'); host.id = 'fitness-watcher'; document.body.append(host);
   const root = host.attachShadow({mode: 'open'});
   root.innerHTML = `<style>
     :host{position:fixed;right:18px;top:18px;z-index:2147483646;font:14px/1.5 system-ui,sans-serif;color:#e5ecf5}
     *{box-sizing:border-box} details{width:350px;max-width:calc(100vw - 36px);background:#142331;border:1px solid #3a5061;border-radius:16px;box-shadow:0 12px 40px #0005}
-    summary{padding:16px;cursor:pointer;font-weight:700;list-style:none}summary span{color:#6ee7bc;font-size:12px;float:right}main{padding:0 16px 16px;max-height:calc(100vh - 95px);overflow:auto}
+    summary{padding:16px;cursor:pointer;font-weight:700;list-style:none}summary span{color:#6ee7bc;font-size:12px;float:right}main{padding:0 16px 16px;max-height:calc(100vh - 95px);max-height:calc(var(--fw-height,100dvh) - 95px);overflow:auto;overscroll-behavior:contain}
     label{display:block;margin:9px 0 4px;color:#b8c9d9;font-size:12px}input,select,button{font:inherit;border-radius:7px;padding:8px;width:100%;border:1px solid #415668;background:#203344;color:#fff}
     button{cursor:pointer;margin-top:9px}button:hover{background:#354f62}button:disabled{opacity:.5;cursor:default}.primary{background:#12664f;border-color:#318c70}.row{display:flex;gap:8px}.row>*{min-width:0;flex:1}
     p{margin:8px 0;font-size:12px;color:#b8c9d9}output{display:block;padding:10px;background:#0b1721;border-radius:8px;margin-top:12px;white-space:pre-wrap;font-size:13px}.hit{color:#6ee7bc}#slots{white-space:pre-line;font-size:12px;margin-top:8px}input[type=checkbox]{width:auto}a{color:#6ee7bc}
     #choices,#dates{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}#choices button,#dates button{margin:0;text-align:left;white-space:pre-line}#choices .chosen,#dates .chosen{outline:2px solid #6ee7bc}#alert{border:2px solid #6ee7bc;border-radius:9px;padding:12px;margin:10px 0;background:#103e33}#alert[hidden]{display:none}#alert-text{font-weight:bold;color:#fff}
-    </style><details open><summary>HKU Fitness Watcher <span>v0.2.2 · 本机辅助</span></summary><main>
-    <button id="fill" class="primary">填写资料</button>
+    @media(pointer:coarse){input,select{font-size:16px}button,summary{min-height:44px}main{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}.row{flex-wrap:wrap}}
+    </style><details id="panel" open><summary>HKU Fitness Watcher <span>v0.3.0 · 本机辅助</span></summary><main>
+    <div class="row"><button id="fill" class="primary">填写资料</button><button id="collapse">收起助手</button></div>
     <details id="profile" style="width:100%;margin-top:10px;box-shadow:none"><summary>编辑 / 保存资料</summary><main>
     <label>邮箱<input id="email" type="email" autocomplete="email"></label>
     <label>姓名（与卡面一致）<input id="name" autocomplete="name"></label>
@@ -72,11 +99,24 @@
     <label>检查间隔（秒，最少 10）<input id="interval" type="number" min="10" max="300" value="30"></label>
     <label><input id="noon" type="checkbox"> 等到下一个香港时间 12:00 开始</label>
     <button id="start">按当前目标开始蹲位</button><button id="notify">启用桌面通知 / 测试声音</button>
-    </main></details><p>保持本页开启、电脑不休眠。选中并预填不代表已占位；声明、验证码及提交由你操作。</p>
+    </main></details><p>保持本页前台、电脑不休眠。手机切后台或锁屏可能暂停蹲位；返回后重新查场次。可收起助手操作原表单。</p>
     </main></details>`;
   const $ = id => root.getElementById(id);
   const status = text => { $('status').textContent = text; };
-  const config = get('fitness:target') || {};
+  const config = savedConfig || {};
+  if(storageWarning)status(storageWarning);
+  if(!storage.persistent){$('remember').disabled=true;status('当前脚本管理器不支持保存，资料仅保留在本页');}
+  const rememberTarget=t=>{put('fitness:target',t).catch(()=>status('目标保存失败，当前页面仍可使用'));};
+  $('collapse').onclick=()=>{$('panel').open=false;};
+  const resizePanel=()=>{
+    if(window.visualViewport && host.style) {
+      host.style.setProperty('--fw-height',`${window.visualViewport.height}px`);
+      host.style.top=`${window.visualViewport.offsetTop+18}px`;
+    }
+  };
+  window.visualViewport?.addEventListener('resize',resizePanel);
+  window.visualViewport?.addEventListener('scroll',resizePanel);
+  resizePanel();
   // Migrate v0.1's arbitrary clock input to "any session"; never restore an accidental time such as 15:49.
   $('center').value = config.schema === 2 && config.center ? config.center : '10002';
   for (const k of ['date','interval']) if (config[k]) $(k).value = config[k];
@@ -93,7 +133,7 @@
       button.disabled = Number(s.spaceRemaining) === 99999 || String(s.sessionStatus) === '20';
       button.onclick = () => {
         stop(); $('time').value = key; hit = available(s) ? s : null;
-        put('fitness:target', target());
+        rememberTarget(target());
         if (hit && snapshotCenter === $('center').value) return prepare();
         else $('start').onclick();
       };
@@ -103,7 +143,6 @@
   }
   sessionChoices([], $('date').value, config.schema === 2 ? config.time || '' : '');
   if (!$('date').value) $('date').value = hkToday();
-  const profile = get('fitness:profile');
   if (profile) { for (const k of ['email','name','member']) $(k).value = profile[k] || ''; $('remember').checked = true; }
   // Reuse information already entered in the original form, without requiring a second entry.
   for(const [id,k] of [['Email','email'],['FirstName','name'],['MemberID','member']]) if(!$(k).value) $(k).value = document.getElementById(id)?.value || '';
@@ -193,7 +232,7 @@
   }
   $('start').onclick=()=>{
     try {
-      const t=target(); stop(); dismissAlert(); running=true; errors=0; hit=null; $('status').classList.remove('hit'); document.title=title; put('fitness:target',t); sound();
+      const t=target(); stop(); dismissAlert(); running=true; errors=0; hit=null; $('status').classList.remove('hit'); document.title=title; rememberTarget(t); sound();
       $('start').disabled=true; $('check').disabled=true;
       for(const k of ['time','interval','noon']) $(k).disabled=true;
       const token=generation;
@@ -214,22 +253,28 @@
       const t=target(); await query(t,token);
       if(token!==generation)return;
       $('any').hidden=false;
-      if(!hit) { running=true; errors=0; put('fitness:target',t); sound(); timer=setTimeout(()=>tick(t,token),nextDelay(t.interval)); }
+      if(!hit) { running=true; errors=0; rememberTarget(t); sound(); timer=setTimeout(()=>tick(t,token),nextDelay(t.interval)); }
     }catch(e){if(token===generation)status(`查询失败：${e.message}`);}finally{if(token===generation)$('check').disabled=false;}
   };
   $('any').onclick=()=>{$('time').value='';$('start').onclick();};
-  $('notify').onclick=async()=>{sound();if(typeof Notification!=='undefined') {try {const p=await Notification.requestPermission();status(p==='granted'?'声音与桌面通知已启用':'桌面通知未启用；仍会声音提醒');}catch{status('桌面通知不可用；仍会声音提醒');}}};
+  $('notify').onclick=async()=>{
+    sound();
+    if(typeof Notification==='undefined' || typeof Notification.requestPermission!=='function') {status('此浏览器不支持系统通知，将使用页内提醒；已请求测试声音');return;}
+    try{const p=await Notification.requestPermission();status(p==='granted'?'系统通知权限已允许；若系统不支持弹出，将使用页内提醒':p==='denied'?'系统通知已被拒绝，将使用页内提醒':'未开启系统通知，将使用页内提醒');}
+    catch{status('系统通知不可用，将使用页内提醒');}
+  };
   function setField(id,value) {const el=document.getElementById(id);if(!el)throw new Error(`原表单缺少 ${id}`);el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));}
-  function fillProfile() {
+  async function fillProfile() {
       for(const [id,k] of [['Email','email'],['FirstName','name'],['MemberID','member']]) if(!$(k).value.trim()) $(k).value = document.getElementById(id)?.value || '';
       const p={email:$('email').value.trim(),name:$('name').value.trim(),member:$('member').value.trim()};
       if(!p.email || !p.name || !p.member || !$('email').checkValidity()) throw new Error('请填写有效邮箱、姓名和学号 / 员工号');
       for(const [id,k] of [['Email','email'],['FirstName','name'],['MemberID','member']]) setField(id,p[k]);
-      if($('remember').checked) put('fitness:profile',p); else erase('fitness:profile');
+      try {if($('remember').checked) await put('fitness:profile',p); else await erase('fitness:profile');}
+      catch {throw new Error('资料已填入原表单，但保存 / 删除失败，请重试');}
   }
-  $('fill').onclick=()=>{try{fillProfile();status('资料已填写；可继续选场次或蹲位');}catch(e){$('profile').open=true;status(e.message);}};
-  $('remember').onchange=()=>{if(!$('remember').checked)erase('fitness:profile');};
-  $('forget').onclick=()=>{erase('fitness:profile');for(const k of ['email','name','member'])$(k).value='';$('remember').checked=false;status('已清除脚本保存的资料；原表单内容未清除');};
+  $('fill').onclick=async()=>{try{await fillProfile();status('资料已填写；可继续选场次或蹲位');}catch(e){$('profile').open=true;status(e.message);}};
+  $('remember').onchange=async()=>{if(!$('remember').checked)try{await erase('fitness:profile');}catch{status('删除已存资料失败，请重试');}};
+  $('forget').onclick=async()=>{try{await erase('fitness:profile');for(const k of ['email','name','member'])$(k).value='';$('remember').checked=false;status('已清除脚本保存的资料；原表单内容未清除');}catch{status('删除已存资料失败，请重试');}};
   for(const k of ['center','date','time']) $(k).onchange=()=>{
     stop(); dismissAlert(); hit=null;
     if(k !== 'time') {rows=[];sessionChoices([], $('date').value);}
@@ -282,4 +327,4 @@
   }
   document.querySelector('#sbmtBtn')?.addEventListener('click',()=>stop('已停止监测；预约结果以原网站返回页面为准'),{capture:true});
   window.addEventListener('pagehide',()=>stop());
-})();
+})().catch(error=>console.error('HKU Fitness Watcher 初始化失败',error));
