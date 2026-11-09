@@ -1,9 +1,10 @@
 // ==UserScript==
 // @name         HKU Fitness Watcher 健身房蹲位
 // @namespace    hku-toys
-// @version      0.3.0
+// @version      0.3.1
 // @description  场次余位监测、声音提醒及一键预填；人工验证和提交
 // @match        https://fcbooking.cse.hku.hk/Form/Signup*
+// @match        https://fcbooking.cse.hku.hk/Form/SignUp*
 // @grant        GM_getValue
 // @grant        GM_setValue
 // @grant        GM_deleteValue
@@ -77,7 +78,7 @@
     p{margin:8px 0;font-size:12px;color:#b8c9d9}output{display:block;padding:10px;background:#0b1721;border-radius:8px;margin-top:12px;white-space:pre-wrap;font-size:13px}.hit{color:#6ee7bc}#slots{white-space:pre-line;font-size:12px;margin-top:8px}input[type=checkbox]{width:auto}a{color:#6ee7bc}
     #choices,#dates{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}#choices button,#dates button{margin:0;text-align:left;white-space:pre-line}#choices .chosen,#dates .chosen{outline:2px solid #6ee7bc}#alert{border:2px solid #6ee7bc;border-radius:9px;padding:12px;margin:10px 0;background:#103e33}#alert[hidden]{display:none}#alert-text{font-weight:bold;color:#fff}
     @media(pointer:coarse){input,select{font-size:16px}button,summary{min-height:44px}main{padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}.row{flex-wrap:wrap}}
-    </style><details id="panel" open><summary>HKU Fitness Watcher <span>v0.3.0 · 本机辅助</span></summary><main>
+    </style><details id="panel" open><summary>HKU Fitness Watcher <span>v0.3.1 · 本机辅助</span></summary><main>
     <div class="row"><button id="fill" class="primary">填写资料</button><button id="collapse">收起助手</button></div>
     <details id="profile" style="width:100%;margin-top:10px;box-shadow:none"><summary>编辑 / 保存资料</summary><main>
     <label>邮箱<input id="email" type="email" autocomplete="email"></label>

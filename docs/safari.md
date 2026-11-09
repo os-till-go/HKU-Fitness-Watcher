@@ -1,6 +1,6 @@
-# Safari 试用指南 · v0.3.0
+# Safari 试用指南 · v0.3.1
 
-目标是 Mac 和 iPhone 的**前台预约辅助**。本分支已完成兼容改动和本地测试，真实 Safari 支持状态仍为待验证。请在 [Issue #4](https://github.com/os-till-go/HKU-Fitness-Watcher/issues/4) 分别记录设备结果。
+目标是 Mac 和 iPhone 的**前台预约辅助**。用户已反馈 iPhone Safari + Userscripts 的 v0.3.0 基本功能可用，设备与系统版本尚未记录；Mac Safari 仍待验证。朋友使用 Mac Chrome，属于 Chromium 测试，不能作为 Mac Safari 的验证。v0.3.1 修复了原网址 `Signup` / `SignUp` 大小写差异，请更新脚本后复核。请在 [Issue #4](https://github.com/os-till-go/HKU-Fitness-Watcher/issues/4) 分别记录设备结果。
 
 ## 选择脚本管理器
 
@@ -13,7 +13,7 @@
 
 ## 安装试用脚本
 
-**未合并的试用版：** 使用 [feat/safari-support 的 Raw 脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/feat/safari-support/fitness-watcher.user.js)。合并后才使用主 README 的 main 安装链接。无论哪一种管理器，先确认面板显示 **v0.3.0**。
+**未合并的试用版：** 使用 [feat/safari-support 的 Raw 脚本](https://raw.githubusercontent.com/os-till-go/HKU-Fitness-Watcher/feat/safari-support/fitness-watcher.user.js)。合并后才使用主 README 的 main 安装链接。无论哪一种管理器，先确认面板显示 **v0.3.1**。
 
 ### Mac
 
@@ -34,7 +34,7 @@ Userscripts 的安装方式和异步 API 以 [发布分支文档](https://github
 
 ## 测试顺序
 
-1. **安装 / 权限**：刷新后仅出现一个 v0.3.0 面板，未操作时不自动查询或预填。
+1. **安装 / 权限**：刷新后仅出现一个 v0.3.1 面板，未操作时不自动查询或预填。
 2. **日期 / 场次**：切换两天日期，查看星期和场次；选择可订场次，确认原网页日期保留原格式，原生下拉框仍可使用。
 3. **资料**：先用演示资料测试。点「填写资料」，核对三个字段；勾选保存后再点填写，刷新检查是否恢复；清除后再刷新检查是否已删除。不要提交演示资料。
 4. **蹲位**：点满位时段或蹲任意时段，保持页面前台；可以停止和更改日期，不应被旧响应覆盖。自然退位不可控制，不必为测试占位或取消预约。
@@ -58,7 +58,7 @@ Userscripts 的安装方式和异步 API 以 [发布分支文档](https://github
 系统版本：
 Safari 版本（若可查）：
 脚本管理器 + 版本：
-脚本版本：v0.3.0
+脚本版本：v0.3.1
 
 安装 / 权限：通过 / 失败
 日期切换与场次查询：通过 / 失败
